@@ -81,10 +81,6 @@ bo *parse_step2(char *buf) {
 			op_count++;
 		}	
 	}
-	for (int i = 0; i <= op_count; i++) {		//OPS AND FIN ARE EQUAL IN LENGTH 
-		printf("%.4f%c", *(fin + i), *(ops + i));
-	}
-	printf("\n");
 	if ((bobo = malloc(sizeof(bo))) == NULL) {
 		perror("malloc err");
 		exit(1);
@@ -100,19 +96,39 @@ bo *parse_step2(char *buf) {
 int parse_step3(bo *bobo) {
 
 	float sfin = *(bobo -> operands);
+	int pos_box, do_order = 0;
+	for (int i = 0; i < bobo -> oplen; i++)		//SHOULD BE VAR < OPLEN IF INTERACTING WITH OPERATORS; IF INTERACTING WITH OPERANDS SHOULD BE VAR <= OPLEN TO ACCOUNT FOR TRAILING OPERAND
+		if (*(bobo -> operators + i) == '*' || *(bobo -> operators + i) == '/') {
+			do_order = 1;
+			pos_box = i;
+			break;
+		}
+	printf("%d\n", pos_box);
+	if (do_order) {
+		switch(*(bobo -> operators + pos_box)) {
+			case '*':
+				sfin = *(bobo -> operands + pos_box) * *(bobo -> operands + (pos_box + 1));
+				break;
+			case '/':
+				sfin = *(bobo -> operands + pos_box) / *(bobo -> operands + (pos_box + 1));
+				break;
+		}
+		for (int i = pos_box + 1; i < bobo -> oplen; i++) {	//ERASE THE RIGHTMOST OF THE TWIN UTILIZED OPERANDS, KEEPING ARRAY CONTENTS SAFE
+			*(bobo -> operands + i) = *(bobo -> operands + (i + 1));
+			*(bobo -> operators + (i - 1)) = *(bobo -> operators + i);
+		}
+		*(bobo -> operators + (bobo -> oplen - 1)) = '\0';
+		*(bobo -> operands + (bobo -> oplen)) = 0;
+		*(bobo -> operands + pos_box) = sfin;	//REPLACE THE LEFTMOST OF THE TWIN OPERANDS WITH THEIR SUM
+	}
+		
 	for (int i = 0; i <= bobo -> oplen; i++) {
 		switch(*(bobo -> operators + i)) {
 			case '+':
-				sfin += *(bobo -> operands + i + 1);
+				sfin += *(bobo -> operands + (i + 1));
 				break;
 			case '-':
-				sfin -= *(bobo -> operands + i + 1);
-				break;
-			case '*':
-				sfin *= *(bobo -> operands + i + 1);
-				break;
-			case '/':
-				sfin /= *(bobo -> operands + i + 1);
+				sfin -= *(bobo -> operands + (i + 1));
 				break;
 		}
 	}
