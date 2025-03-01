@@ -2,14 +2,21 @@
 #include <stdlib.h>
 #include <string.h>
 
+typedef struct {
+	char *operators;
+	float *operands;	
+	size_t oplen;
+} bo;
+
 char *parse_step1(void);
-void parse_step2(char *buffer);
+bo *parse_step2(char *buffer);
+int parse_step3(bo *bobo);
 
 int main(void) {
 
-    parse_step2(parse_step1());
-    return 0;
-
+	while (1)
+		parse_step3(parse_step2(parse_step1()));
+	return 0;
 }
 
 char *parse_step1(void) {
@@ -41,16 +48,18 @@ char *parse_step1(void) {
 
 }
 
-void parse_step2(char *buf) {
+bo *parse_step2(char *buf) {
 
 	char c, *nums = NULL, *ops = NULL;		//CURRENT CHAR BOX, ARRAY OF OPERANDS AS CHARACTERS, ARRAY OF OPERATORS
-	int mal_con = 1, num_count = 0, op_count = 0, *fin = NULL;		//REALLOC SIZE CONTROLLER, NUM LOCATION INCREMENETER, OPS LOCATION INCREMENTER, ARRAY OF OPERANDS AS INTEGERS
+	int mal_con = 1, num_count = 0, op_count = 0;		//REALLOC SIZE CONTROLLER, NUM LOCATION INCREMENETER, OPS LOCATION INCREMENTER,
+	float *fin = NULL;		 //ARRAY OF OPERANDS AS FLOATING-POINTS
+	bo *bobo;
 	buf[strlen(buf)] = '\0';		
 	for (int i = 0; i <= strlen(buf); i++) {	//EFFECTIVELY PARSES AN ARBITRARILY LONG MATHEMATICAL ARGUMENT
 		if (i + 1 == mal_con) {		//BY USING A SINGLE REALLOC CONTROLLER, WE ELIMINATE THE NEED FOR MULTIPLE VARIABLES AT THE COST OF STABILITY
 			mal_con *= 2;
 			nums = realloc(nums, sizeof(char) * mal_con);
-			fin = realloc(fin, sizeof(int) * mal_con);
+			fin = realloc(fin, sizeof(float) * mal_con);
 			ops = realloc(ops, sizeof(char) * mal_con);
 		}
 		if ((c = *(buf + i)) != '+' && c != '-' && c != '*' && c != '/' && c != '\0') {
@@ -59,8 +68,8 @@ void parse_step2(char *buf) {
 		} else if (c == '\0') {		//ENSURE THAT LAST NUMBER IS READ USING NULL CHARACTER AS TERMINATION OPERATOR
 			*(fin + op_count) = atoi(nums);
 		} else {
-			if ((*(fin + op_count) = atoi(nums)) == 0) {
-				perror("atoi err");
+			if ((*(fin + op_count) = atof(nums)) == 0) {
+				perror("atof err");
 				exit(1);
 			}
 			if (memset(nums, 0, strlen(nums)) == NULL) {
@@ -73,12 +82,43 @@ void parse_step2(char *buf) {
 		}	
 	}
 	for (int i = 0; i <= op_count; i++) {		//OPS AND FIN ARE EQUAL IN LENGTH 
-		printf("%d%c", *(fin + i), *(ops + i));
+		printf("%.4f%c", *(fin + i), *(ops + i));
 	}
 	printf("\n");
+	if ((bobo = malloc(sizeof(bo))) == NULL) {
+		perror("malloc err");
+		exit(1);
+	}
+	bobo -> operators = ops;
+	bobo -> operands = fin;
+	bobo -> oplen = op_count;
 	free(nums);
-	free(ops);
-	free(fin);
+	return bobo;
+
+}
+
+int parse_step3(bo *bobo) {
+
+	float sfin = *(bobo -> operands);
+	for (int i = 0; i <= bobo -> oplen; i++) {
+		switch(*(bobo -> operators + i)) {
+			case '+':
+				sfin += *(bobo -> operands + i + 1);
+				break;
+			case '-':
+				sfin -= *(bobo -> operands + i + 1);
+				break;
+			case '*':
+				sfin *= *(bobo -> operands + i + 1);
+				break;
+			case '/':
+				sfin /= *(bobo -> operands + i + 1);
+				break;
+		}
+	}
+	free(bobo);
+	printf("%.4f\n", sfin);
+	return 0;
 
 }
 
