@@ -2,19 +2,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-typedef struct {
-	char *operators;
-	int *operands;
-} bo;
-
 char *parse_step1(void);
-bo *parse_step2(char *buffer);
-int parse_step3(bo *bobo);
+void parse_step2(char *buffer);
 
 int main(void) {
 
-	bo *bing = parse_step3(parse_step2(parse_step1()));
-	return 0;
+    parse_step2(parse_step1());
+    return 0;
 
 }
 
@@ -47,11 +41,10 @@ char *parse_step1(void) {
 
 }
 
-bo *parse_step2(char *buf) {
+void parse_step2(char *buf) {
 
 	char c, *nums = NULL, *ops = NULL;		//CURRENT CHAR BOX, ARRAY OF OPERANDS AS CHARACTERS, ARRAY OF OPERATORS
 	int mal_con = 1, num_count = 0, op_count = 0, *fin = NULL;		//REALLOC SIZE CONTROLLER, NUM LOCATION INCREMENETER, OPS LOCATION INCREMENTER, ARRAY OF OPERANDS AS INTEGERS
-	bo *bobo;
 	buf[strlen(buf)] = '\0';		
 	for (int i = 0; i <= strlen(buf); i++) {	//EFFECTIVELY PARSES AN ARBITRARILY LONG MATHEMATICAL ARGUMENT
 		if (i + 1 == mal_con) {		//BY USING A SINGLE REALLOC CONTROLLER, WE ELIMINATE THE NEED FOR MULTIPLE VARIABLES AT THE COST OF STABILITY
@@ -83,23 +76,9 @@ bo *parse_step2(char *buf) {
 		printf("%d%c", *(fin + i), *(ops + i));
 	}
 	printf("\n");
-	if ((bobo = malloc(sizeof(bo))) == NULL) {
-		perror("malloc err");
-		exit(1);
-	}
-	bobo -> operators = ops;
-	bobo -> operands = fin;
 	free(nums);
 	free(ops);
 	free(fin);
-	return bobo;
 
 }
 
-int parse_step3(bo *bobo) {
-
-	int *arr = bobo -> operands;	
-	int fin = *arr;
-	printf("%d\n", fin);
-
-}
