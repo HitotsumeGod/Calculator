@@ -103,7 +103,6 @@ int parse_step3(bo *bobo) {
 			pos_box = i;
 			break;
 		}
-	printf("%d\n", pos_box);
 	if (do_order) {
 		switch(*(bobo -> operators + pos_box)) {
 			case '*':
@@ -121,7 +120,7 @@ int parse_step3(bo *bobo) {
 		*(bobo -> operands + (bobo -> oplen)) = 0;
 		*(bobo -> operands + pos_box) = sfin;	//REPLACE THE LEFTMOST OF THE TWIN OPERANDS WITH THEIR SUM
 	}
-		
+	sfin = *(bobo -> operands);
 	for (int i = 0; i <= bobo -> oplen; i++) {
 		switch(*(bobo -> operators + i)) {
 			case '+':
