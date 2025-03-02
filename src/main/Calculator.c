@@ -4,26 +4,26 @@
 
 typedef struct {
 	char *operators;
-	float *operands;	
+	double *operands;	
 	size_t oplen;
 } bo;
 
-char *parse_step1(void);
-bo *parse_step2(char *buffer);
-float parse_step3(bo *bobo);
+char *get_expression(void);	//OBTAIN USER-INPUT MATHEMATICAL EXPRESSION; RETURN IN STRING FORMAT FOR PARSING BY
+bo *parse_expression(char *buffer);	//GIVEN A M.E., PARSES DIGITS AND OPERATORS, SEPARATING THEM INTO THE SEPARATE ARRAYS OF FIN AND OPS, WHICH ARE THEN STORED IN A BO STRUCT FOR EXPORTINGTO
+double calculate_expression(bo *bobo);	//GIVEN A BO STRUCT, CHECKS FOR THE NEED TO PERFORM PEMDAS CALCULATIONS, AND THEN CALCULATES THE EXPRESSION SPLIT INTO OPERATOR AND OPERAND ARRAYS; RETURNS FINAL SUM TO MAIN FUNCTION
 
 int main(void) {
 
 	while (1)
-		printf("%.2f\n", parse_step3(parse_step2(parse_step1())));
+		printf("%.2f\n", calculate_expression(parse_expression(get_expression())));
 	return 0;
 }
 
-char *parse_step1(void) {
+char *get_expression(void) {
 
-	char *buffer, permissable[14] = {'0','1','2','3','4','5','6','7','8','9','+','-','*','/'};
-	int n, c, count, bol = 0;
-	count = 0, n = 2;
+	char *buffer, permissable[15] = {'0','1','2','3','4','5','6','7','8','9','+','-','*','/', '.'};
+	int n, c, count, bol;
+	count = 0, bol = 0, n = 2;
 	if ((buffer = malloc(sizeof(char) * n)) == NULL) {
 		perror("malloc err");
 		exit(1);
@@ -33,45 +33,47 @@ char *parse_step1(void) {
 			n *= 2;
 			buffer = realloc(buffer, sizeof(char) * n);
 		}
-		for (int i = 0; i < 14; i++)
+		for (int i = 0; i < sizeof(permissable); i++) 
 			if (c == permissable[i]) {
 				bol = 1;
 				break;
+			} else {
+				bol = 0;
 			}
-		if (bol == 1) {
+		if (bol) {
 			*(buffer + count) = c;
 			count++;
-		}	
+		} else {
+			printf("%s\n", "Calculator only accepts numbers and operators (+, -, *, /).");	
+			exit(1);
+		}
 	}
 	*(buffer + count) = '\0';
 	return buffer;
 
 }
 
-bo *parse_step2(char *buf) {
+bo *parse_expression(char *buf) {
 
 	char c, *nums = NULL, *ops = NULL;		//CURRENT CHAR BOX, ARRAY OF OPERANDS AS CHARACTERS, ARRAY OF OPERATORS
 	int mal_con = 1, num_count = 0, op_count = 0;		//REALLOC SIZE CONTROLLER, NUM LOCATION INCREMENETER, OPS LOCATION INCREMENTER,
-	float *fin = NULL;		 //ARRAY OF OPERANDS AS FLOATING-POINTS
+	double *fin = NULL;		 //ARRAY OF OPERANDS AS doubleING-POINTS
 	bo *bobo;
 	buf[strlen(buf)] = '\0';		
 	for (int i = 0; i <= strlen(buf); i++) {	//EFFECTIVELY PARSES AN ARBITRARILY LONG MATHEMATICAL ARGUMENT
 		if (i + 1 == mal_con) {		//BY USING A SINGLE REALLOC CONTROLLER, WE ELIMINATE THE NEED FOR MULTIPLE VARIABLES AT THE COST OF STABILITY
 			mal_con *= 2;
 			nums = realloc(nums, sizeof(char) * mal_con);
-			fin = realloc(fin, sizeof(float) * mal_con);
+			fin = realloc(fin, sizeof(double) * mal_con);
 			ops = realloc(ops, sizeof(char) * mal_con);
 		}
 		if ((c = *(buf + i)) != '+' && c != '-' && c != '*' && c != '/' && c != '\0') {
 			*(nums + num_count) = c;
 			num_count++;
 		} else if (c == '\0') {		//ENSURE THAT LAST NUMBER IS READ USING NULL CHARACTER AS TERMINATION OPERATOR
-			*(fin + op_count) = atoi(nums);
+			*(fin + op_count) = atof(nums);
 		} else {
-			if ((*(fin + op_count) = atof(nums)) == 0) {
-				perror("atof err");
-				exit(1);
-			}
+			*(fin + op_count) = atof(nums);
 			if (memset(nums, 0, strlen(nums)) == NULL) {
 				perror("memset err");
 				exit(1);
@@ -88,14 +90,15 @@ bo *parse_step2(char *buf) {
 	bobo -> operators = ops;
 	bobo -> operands = fin;
 	bobo -> oplen = op_count;
+	free(buf);
 	free(nums);
 	return bobo;
 
 }
 
-float parse_step3(bo *bobo) {
+double calculate_expression(bo *bobo) {
 
-	float sfin = *(bobo -> operands);
+	double sfin = *(bobo -> operands);
 	int pos_box, do_order = 0;
 	for (int i = 0; i < bobo -> oplen; i++)		//SHOULD BE VAR < OPLEN IF INTERACTING WITH OPERATORS; IF INTERACTING WITH OPERANDS SHOULD BE VAR <= OPLEN TO ACCOUNT FOR TRAILING OPERAND
 		if (*(bobo -> operators + i) == '*' || *(bobo -> operators + i) == '/') {
@@ -103,7 +106,7 @@ float parse_step3(bo *bobo) {
 			pos_box = i;
 			break;
 		}
-	while (do_order) {
+	while (do_order) {	//DOES WORK IN (PE)MDAS FASHION
 		switch(*(bobo -> operators + pos_box)) {
 			case '*':
 				sfin = *(bobo -> operands + pos_box) * *(bobo -> operands + (pos_box + 1));
@@ -127,7 +130,7 @@ float parse_step3(bo *bobo) {
 				break;
 			}
 	}
-	sfin = *(bobo -> operands);
+	sfin = *(bobo -> operands);	//SET SFIN BACK TO FIRST VALUE IN OPERANDS LIST
 	for (int i = 0; i <= bobo -> oplen; i++) {
 		switch(*(bobo -> operators + i)) {
 			case '+':
