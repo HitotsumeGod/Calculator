@@ -10,12 +10,12 @@ typedef struct {
 
 char *parse_step1(void);
 bo *parse_step2(char *buffer);
-int parse_step3(bo *bobo);
+float parse_step3(bo *bobo);
 
 int main(void) {
 
 	while (1)
-		parse_step3(parse_step2(parse_step1()));
+		printf("%.2f\n", parse_step3(parse_step2(parse_step1())));
 	return 0;
 }
 
@@ -93,7 +93,7 @@ bo *parse_step2(char *buf) {
 
 }
 
-int parse_step3(bo *bobo) {
+float parse_step3(bo *bobo) {
 
 	float sfin = *(bobo -> operands);
 	int pos_box, do_order = 0;
@@ -103,7 +103,7 @@ int parse_step3(bo *bobo) {
 			pos_box = i;
 			break;
 		}
-	if (do_order) {
+	while (do_order) {
 		switch(*(bobo -> operators + pos_box)) {
 			case '*':
 				sfin = *(bobo -> operands + pos_box) * *(bobo -> operands + (pos_box + 1));
@@ -119,6 +119,13 @@ int parse_step3(bo *bobo) {
 		*(bobo -> operators + (bobo -> oplen - 1)) = '\0';
 		*(bobo -> operands + (bobo -> oplen)) = 0;
 		*(bobo -> operands + pos_box) = sfin;	//REPLACE THE LEFTMOST OF THE TWIN OPERANDS WITH THEIR SUM
+		do_order = 0;
+		for (int i = 0; i < bobo -> oplen; i++)		
+			if (*(bobo -> operators + i) == '*' || *(bobo -> operators + i) == '/') {
+				do_order = 1;
+				pos_box = i;
+				break;
+			}
 	}
 	sfin = *(bobo -> operands);
 	for (int i = 0; i <= bobo -> oplen; i++) {
@@ -132,8 +139,7 @@ int parse_step3(bo *bobo) {
 		}
 	}
 	free(bobo);
-	printf("%.4f\n", sfin);
-	return 0;
+	return sfin;
 
 }
 
