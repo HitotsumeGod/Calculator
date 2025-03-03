@@ -5,7 +5,7 @@
 typedef struct {
 	char *operators;
 	double *operands;	
-	size_t oplen;
+	size_t oplen, finlen;
 } bo;
 
 char *get_expression(void);	//OBTAIN USER-INPUT MATHEMATICAL EXPRESSION; RETURN IN STRING FORMAT FOR PARSING BY
@@ -56,7 +56,7 @@ char *get_expression(void) {
 bo *parse_expression(char *buf) {
 
 	char c, *nums = NULL, *ops = NULL;		//CURRENT CHAR BOX, ARRAY OF OPERANDS AS CHARACTERS, ARRAY OF OPERATORS
-	int mal_con = 1, num_count = 0, op_count = 0;		//REALLOC SIZE CONTROLLER, NUM LOCATION INCREMENETER, OPS LOCATION INCREMENTER,
+	int mal_con = 1, num_count = 0, op_count = 0, fin_count = 0;		//REALLOC SIZE CONTROLLER, NUM LOCATION INCREMENETER, OPS LOCATION INCREMENTER,
 	double *fin = NULL;		 //ARRAY OF OPERANDS AS doubleING-POINTS
 	bo *bobo;
 	buf[strlen(buf)] = '\0';		
@@ -71,15 +71,17 @@ bo *parse_expression(char *buf) {
 			*(nums + num_count) = c;
 			num_count++;
 		} else if (c == '\0') {		//ENSURE THAT LAST NUMBER IS READ USING NULL CHARACTER AS TERMINATION OPERATOR
-			*(fin + op_count) = atof(nums);
+			*(fin + fin_count) = atof(nums);
+			fin_count++;
 		} else {
-			*(fin + op_count) = atof(nums);
+			*(fin + fin_count) = atof(nums);
 			if (memset(nums, 0, strlen(nums)) == NULL) {
 				perror("memset err");
 				exit(1);
 			}
 			num_count = 0;
 			*(ops + op_count) = c;
+			fin_count++;
 			op_count++;
 		}	
 	}
@@ -90,6 +92,7 @@ bo *parse_expression(char *buf) {
 	bobo -> operators = ops;
 	bobo -> operands = fin;
 	bobo -> oplen = op_count;
+	bobo -> finlen = fin_count;
 	free(buf);
 	free(nums);
 	return bobo;
@@ -120,7 +123,7 @@ double calculate_expression(bo *bobo) {
 			*(bobo -> operators + (i - 1)) = *(bobo -> operators + i);
 		}
 		*(bobo -> operators + (bobo -> oplen - 1)) = '\0';
-		*(bobo -> operands + (bobo -> oplen)) = 0;
+		*(bobo -> operands + (bobo -> finlen - 1)) = 0;
 		*(bobo -> operands + pos_box) = sfin;	//REPLACE THE LEFTMOST OF THE TWIN OPERANDS WITH THEIR SUM
 		do_order = 0;
 		for (int i = 0; i < bobo -> oplen; i++)		
@@ -131,8 +134,8 @@ double calculate_expression(bo *bobo) {
 			}
 	}
 	sfin = *(bobo -> operands);	//SET SFIN BACK TO FIRST VALUE IN OPERANDS LIST
-	for (int i = 0; i <= bobo -> oplen; i++) {
-		switch(*(bobo -> operators + i)) {
+	for (int i = 0; i < bobo -> oplen; i++) {
+		switch (*(bobo -> operators + i)) {
 			case '+':
 				sfin += *(bobo -> operands + (i + 1));
 				break;
