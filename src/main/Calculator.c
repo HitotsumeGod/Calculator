@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 typedef struct {
 	char *operators;
@@ -14,8 +15,13 @@ double calculate_expression(bo *bobo);	//GIVEN A BO STRUCT, CHECKS FOR THE NEED 
 
 int main(void) {
 
+	double sum;
+	printf("\x1b[%dm%s\n", 31, "Calc-Later online.");
 	while (1)
-		printf("%.2f\n", calculate_expression(parse_expression(get_expression())));
+		if (isinf((sum = calculate_expression(parse_expression(get_expression())))))
+			printf("%s\n", "Division by zero detected. Stop that.");
+		else
+			printf("%.2f\n", sum);
 	return 0;
 }
 
@@ -59,7 +65,7 @@ bo *parse_expression(char *buf) {
 	int mal_con = 1, num_count = 0, op_count = 0, fin_count = 0;		//REALLOC SIZE CONTROLLER, NUM LOCATION INCREMENETER, OPS LOCATION INCREMENTER,
 	double *fin = NULL;		 //ARRAY OF OPERANDS AS doubleING-POINTS
 	bo *bobo;
-	buf[strlen(buf)] = '\0';		
+	buf[strlen(buf)] = '\0';	
 	for (int i = 0; i <= strlen(buf); i++) {	//EFFECTIVELY PARSES AN ARBITRARILY LONG MATHEMATICAL ARGUMENT
 		if (i + 1 == mal_con) {		//BY USING A SINGLE REALLOC CONTROLLER, WE ELIMINATE THE NEED FOR MULTIPLE VARIABLES AT THE COST OF STABILITY
 			mal_con *= 2;
@@ -70,6 +76,17 @@ bo *parse_expression(char *buf) {
 		if ((c = *(buf + i)) != '+' && c != '-' && c != '*' && c != '/' && c != '\0') {
 			*(nums + num_count) = c;
 			num_count++;
+		} else if (c == '-') {
+			if (atof(nums) != 0) {
+				*(fin + fin_count) = atof(nums);
+				fin_count++;
+			}
+			if (memset(nums, 0, strlen(nums)) == NULL) {
+				perror("memset err");
+				exit(1);
+			}
+			*nums = c;
+			num_count = 1;
 		} else if (c == '\0') {		//ENSURE THAT LAST NUMBER IS READ USING NULL CHARACTER AS TERMINATION OPERATOR
 			*(fin + fin_count) = atof(nums);
 			fin_count++;
@@ -133,17 +150,10 @@ double calculate_expression(bo *bobo) {
 				break;
 			}
 	}
+
 	sfin = *(bobo -> operands);	//SET SFIN BACK TO FIRST VALUE IN OPERANDS LIST
-	for (int i = 0; i < bobo -> oplen; i++) {
-		switch (*(bobo -> operators + i)) {
-			case '+':
-				sfin += *(bobo -> operands + (i + 1));
-				break;
-			case '-':
-				sfin -= *(bobo -> operands + (i + 1));
-				break;
-		}
-	}
+	for (int i = 0; i < bobo -> finlen; i++)
+		sfin += *(bobo -> operands + (i + 1));	
 	free(bobo);
 	return sfin;
 
