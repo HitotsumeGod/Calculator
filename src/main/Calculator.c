@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <float.h>
 
 typedef struct {
 	char *operators;
@@ -13,13 +14,19 @@ char *get_expression(void);	//OBTAIN USER-INPUT MATHEMATICAL EXPRESSION; RETURN 
 bo *parse_expression(char *buffer);	//GIVEN A M.E., PARSES DIGITS AND OPERATORS, SEPARATING THEM INTO THE SEPARATE ARRAYS OF FIN AND OPS, WHICH ARE THEN STORED IN A BO STRUCT FOR EXPORTINGTO
 double calculate_expression(bo *bobo);	//GIVEN A BO STRUCT, CHECKS FOR THE NEED TO PERFORM PEMDAS CALCULATIONS, AND THEN CALCULATES THE EXPRESSION SPLIT INTO OPERATOR AND OPERAND ARRAYS; RETURNS FINAL SUM TO MAIN FUNCTION
 
-int main(void) {
+int main(int argc, char *argv[]) {
 
 	double sum;
+	int dplaceval;
+
+	if (argc == 3) 
+		if (strcmp(argv[1], "--precision") == 0)
+			dplaceval = argv[2][0] - '0';
+	dplaceval = 2;
 	printf("\x1b[%dm%s\n", 31, "Calc-Later online.");
 	while (1)
 		if (isinf((sum = calculate_expression(parse_expression(get_expression())))))
-			printf("%s\n", "Division by zero detected. Stop that.");
+			printf("%s%e%s\n", "You either divided by zero or tried to get a number larger than our max of ", DBL_MAX, ". Either way, you're cooked.");
 		else
 			printf("%.2f\n", sum);
 	return 0;
@@ -27,7 +34,7 @@ int main(void) {
 
 char *get_expression(void) {
 
-	char *buffer, permissable[15] = {'0','1','2','3','4','5','6','7','8','9','+','-','*','/', '.'};
+	char *buffer, permissable[16] = {'0','1','2','3','4','5','6','7','8','9','+','-','*','/', '^', '.'};
 	int n, c, count, bol;
 	count = 0, bol = 0, n = 2;
 	if ((buffer = malloc(sizeof(char) * n)) == NULL) {
@@ -73,7 +80,7 @@ bo *parse_expression(char *buf) {
 			fin = realloc(fin, sizeof(double) * mal_con);
 			ops = realloc(ops, sizeof(char) * mal_con);
 		}
-		if ((c = *(buf + i)) != '+' && c != '-' && c != '*' && c != '/' && c != '\0') {
+		if ((c = *(buf + i)) != '+' && c != '-' && c != '*' && c != '/' && c != '^' && c != '\0') {
 			*(nums + num_count) = c;
 			num_count++;
 		} else if (c == '-') {
@@ -118,10 +125,10 @@ bo *parse_expression(char *buf) {
 
 double calculate_expression(bo *bobo) {
 
-	double sfin = *(bobo -> operands);
+	double sfin = *(bobo -> operands), basefin;
 	int pos_box, do_order = 0;
 	for (int i = 0; i < bobo -> oplen; i++)		//SHOULD BE VAR < OPLEN IF INTERACTING WITH OPERATORS; IF INTERACTING WITH OPERANDS SHOULD BE VAR <= OPLEN TO ACCOUNT FOR TRAILING OPERAND
-		if (*(bobo -> operators + i) == '*' || *(bobo -> operators + i) == '/') {
+		if (*(bobo -> operators + i) == '*' || *(bobo -> operators + i) == '/' || *(bobo -> operators + i) == '^') {
 			do_order = 1;
 			pos_box = i;
 			break;
@@ -134,6 +141,11 @@ double calculate_expression(bo *bobo) {
 			case '/':
 				sfin = *(bobo -> operands + pos_box) / *(bobo -> operands + (pos_box + 1));
 				break;
+			case '^':
+				basefin = *(bobo -> operands + pos_box);
+				for (int i = 1; i < *(bobo -> operands + (pos_box + 1)); i++)
+					sfin *= basefin;
+				break;
 		}
 		for (int i = pos_box + 1; i < bobo -> oplen; i++) {	//ERASE THE RIGHTMOST OF THE TWIN UTILIZED OPERANDS, KEEPING ARRAY CONTENTS SAFE
 			*(bobo -> operands + i) = *(bobo -> operands + (i + 1));
@@ -144,7 +156,7 @@ double calculate_expression(bo *bobo) {
 		*(bobo -> operands + pos_box) = sfin;	//REPLACE THE LEFTMOST OF THE TWIN OPERANDS WITH THEIR SUM
 		do_order = 0;
 		for (int i = 0; i < bobo -> oplen; i++)		
-			if (*(bobo -> operators + i) == '*' || *(bobo -> operators + i) == '/') {
+			if (*(bobo -> operators + i) == '*' || *(bobo -> operators + i) == '/' || *(bobo -> operators + i) == '^') {
 				do_order = 1;
 				pos_box = i;
 				break;
